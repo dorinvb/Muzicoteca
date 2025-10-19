@@ -27,7 +27,7 @@ function clear(node){
 }
 
 /**
- * Generează un link extern de căutare pentru album pe diverse platforme (doar pictograma).
+ * Generează un link extern de căutare pentru album pe diverse platforme cu pictograme.
  */
 function createExternalLink(platform, artist, album) {
     let url, icon, title;
@@ -36,37 +36,62 @@ function createExternalLink(platform, artist, album) {
     switch (platform.toLowerCase()) {
         case 'youtube':
             url = `https://www.youtube.com/results?search_query=${searchAlbum} full album`;
+            // Icon: Emoticon "YouTube"
             icon = '▶️';
             title = 'YouTube';
             break;
         case 'spotify':
+            // Spotify caută mai eficient pe Google
             url = `https://www.google.com/search?q=spotify+${searchAlbum}`;
+            // Icon: Emoticon "Cerc Verde" sau echivalent
             icon = '🟢';
             title = 'Spotify';
             break;
         case 'deezer':
             url = `https://www.deezer.com/search/${searchAlbum}/album`;
-            icon = '🟦';
+            // Icon: Emoticon "Inima Mov" sau echivalent
+            icon = '💜';
             title = 'Deezer';
             break;
         case 'tidal':
             url = `https://listen.tidal.com/search?query=${searchAlbum}&type=albums`;
-            icon = '💎';
+            // Icon: Emoticon "Diamant Albastru" sau echivalent
+            icon = '🔷';
             title = 'Tidal';
             break;
         case 'qobuz':
             url = `https://www.qobuz.com/search?q=${searchAlbum}&i=album`; 
-            icon = '🎼';
+            // Icon: Emoticon "Disc Muzical" sau echivalent
+            icon = '💿';
             title = 'Qobuz';
             break;
         default:
             return '';
     }
-    // Returăm doar pictograma. Titlul este folosit ca alt-text.
-    return `<a class="external-link" target="_blank" rel="noopener" href="${url}" title="Caută pe ${title}">${icon}</a>`;
+    // Folosim clasa 'external-link' din styles.css
+    return `<a class="external-link" target="_blank" rel="noopener" href="${url}" title="Caută pe ${title}">${icon} ${title}</a>`;
 }
 
-// --- Logică de Selecție ---
+// --- LOGICĂ DE TRADUCERE SIMPLIFICATĂ ---
+// Vom folosi Google Search pentru a simula găsirea unei traduceri/descrieri în RO.
+
+async function fetchTranslation(text) {
+    // În mediul real, am folosi un API de traducere (ex. Google Translate API).
+    // Aici, pentru a simula un rezultat, vom returna o descriere generică în RO,
+    // deoarece nu avem un API de traducere real disponibil.
+    
+    // În loc să returnăm o descriere reală tradusă (imposibil fără un API),
+    // vom returna o descriere placeholder care să arate că logica de traducere a fost aplicată.
+    
+    // Vom încerca o căutare Google pentru a găsi un sinopsis în română
+    const googleQuery = `sinopsis album ${text} limba română`;
+    // Această metodă nu este fiabilă, dar este cea mai apropiată simulare.
+    // Vom returna textul original, dar voi adăuga o notă în codul final.
+    return text || 'Fără descriere disponibilă.';
+}
+
+
+// --- Logică de Selecție (Rămâne neschimbată) ---
 
 /**
  * Gestionează schimbarea selecției de gen și încarcă top albumele.
@@ -80,17 +105,14 @@ function handleSelectionChange() {
         return;
     }
     
-    // Setează titlul corect
     const tagDisplay = (tag === 'music') ? 'Toate genurile' : tag.charAt(0).toUpperCase() + tag.slice(1);
     resultsTitleDetails.textContent = `pentru Genul: ${tagDisplay}`;
     
-    // Acum se încarcă DOAR Albumele
     loadTopAlbumsForTag(tag, 50);
 }
 
-// --- Încărcare Date Last.fm ---
+// --- Încărcare Date Last.fm (Rămâne neschimbată) ---
 
-// 1. Populează selectorul de genuri cu opțiunea prestabilită
 async function loadGenresForSelect() {
   genreSelect.innerHTML = '<option value="" disabled selected>⏳ Încarc genuri...</option>';
   try{
@@ -98,7 +120,6 @@ async function loadGenresForSelect() {
     const data = await res.json();
     const tags = data.tags?.tag || [];
     
-    // Adaugă opțiunea "Toate genurile" ca opțiune selectată implicit
     genreSelect.innerHTML = '<option value="music" selected>Toate genurile</option>'; 
 
     if(!tags.length){ 
@@ -114,7 +135,6 @@ async function loadGenresForSelect() {
       genreSelect.appendChild(option);
     });
     
-    // Asigură că selectorul are valoarea prestabilită și declanșează încărcarea
     genreSelect.value = 'music';
     handleSelectionChange(); 
     
@@ -124,7 +144,7 @@ async function loadGenresForSelect() {
   }
 }
 
-// 2. Load top albums
+
 async function loadTopAlbumsForTag(tag, limit=50){
   albumsEl.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i> Se încarcă top ${limit} albume pentru «${tag}»...</div>`;
   
@@ -149,7 +169,6 @@ async function loadTopAlbumsForTag(tag, limit=50){
       const albumName = a.name || 'Nume Necunoscut';
       const artist = a.artist?.name || 'Artist Necunoscut';
       
-      // Am adaptat structura cardului la stilul Filmoteca (.content-info, h2, p)
       albumCard.innerHTML = `
         <img loading="lazy" src="${cover}" alt="${albumName} de ${artist}">
         <div class="content-info">
@@ -168,7 +187,8 @@ async function loadTopAlbumsForTag(tag, limit=50){
   }
 }
 
-// --- Detalii Modal ---
+
+// --- Detalii Modal (Actualizat pentru Traducere și Link-uri) ---
 
 async function openAlbumModal(artist, albumName, coverUrl) {
     clear(modalDetailsEl);
@@ -184,16 +204,21 @@ async function openAlbumModal(artist, albumName, coverUrl) {
         const album = albumData.album;
         
         const releaseDate = album?.wiki?.published ? album.wiki.published.split(',')[0].trim() : 'Necunoscut';
-        const summary = album?.wiki?.summary ? album.wiki.summary.replace(/<a href="[^"]*">Read more on Last.fm<\/a>/, '') : 'Descrierea albumului nu este disponibilă pe Last.fm.';
+        const summaryEN = album?.wiki?.summary ? album.wiki.summary.replace(/<a href="[^"]*">Read more on Last.fm<\/a>/, '') : 'Descrierea albumului nu este disponibilă pe Last.fm.';
+        
+        // --- LOGICA DE TRADUCERE AICI ---
+        const summaryRO = await fetchTranslation(summaryEN); 
+        
         const tags = album?.tags?.tag || [];
         const tracks = album?.tracks?.track || []; 
         
+        // Secțiunea de Link-uri Externe
         const externalLinks = [
-            createExternalLink('youtube', artist, albumName),
             createExternalLink('spotify', artist, albumName),
             createExternalLink('deezer', artist, albumName),
             createExternalLink('tidal', artist, albumName),
             createExternalLink('qobuz', artist, albumName),
+            createExternalLink('youtube', artist, albumName)
         ].join('');
         
         const tracklistHtml = tracks.length > 0
@@ -204,7 +229,6 @@ async function openAlbumModal(artist, albumName, coverUrl) {
             : `<div class="tracklist"><h3>Lista de melodii:</h3><p class="empty">Lista nu este disponibilă.</p></div>`;
 
 
-        // Folosim clasa 'detail-header-music' pentru layout-ul specific de muzică
         modalDetailsEl.innerHTML = `
             <div class="detail-header-music"> 
                 <div>
@@ -221,8 +245,8 @@ async function openAlbumModal(artist, albumName, coverUrl) {
                     <hr>
                     ${tracklistHtml}
                     <hr>
-                    <h3>Sinopsis</h3>
-                    <p class="detail-overview">${summary}</p>
+                    <h3>Sinopsis (Descriere originală, deoarece nu avem un API de traducere)</h3>
+                    <p class="detail-overview">${summaryRO || 'Fără descriere disponibilă.'}</p>
                     <h3>Genuri & Tag-uri:</h3>
                     ${tags.map(t => `<span class="genre-badge">${t.name}</span>`).join('') || '<p>Niciun tag.</p>'}
                     <p style="margin-top: 10px;" class="empty">Detalii complete pe <a target="_blank" href="${album.url}" style="color: #4dabf7; text-decoration: none;">Last.fm</a></p>
@@ -238,7 +262,7 @@ async function openAlbumModal(artist, albumName, coverUrl) {
 }
 
 
-// --- Evenimente ---
+// --- Evenimente (Rămân neschimbate) ---
 
 // Ascultători pentru schimbarea selecției
 genreSelect.addEventListener('change', handleSelectionChange);
@@ -248,6 +272,10 @@ backButtonEl.addEventListener('click', () => {
     detailPageEl.classList.add('hidden');
 });
 
+// Inițializare: Începe cu încărcarea genurilor.
+document.addEventListener('DOMContentLoaded', () => {
+    loadGenresForSelect();
+});
 // Inițializare: Începe cu încărcarea genurilor.
 document.addEventListener('DOMContentLoaded', () => {
     loadGenresForSelect();
